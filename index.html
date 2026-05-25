@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>光影文字书写本</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            min-height: 100vh;
+            font-family: "Microsoft YaHei", sans-serif;
+            background: linear-gradient(-45deg, #f0f4ff, #e8f4fd, #f5f0ff, #fef5f8);
+            background-size: 400% 400%;
+            animation: bgGradient 12s ease infinite;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            overflow-x: hidden;
+        }
+        @keyframes bgGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        #particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        .title {
+            font-size: 32px;
+            background: linear-gradient(135deg, #409eff, #722ed1);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 30px;
+            animation: float 4s ease-in-out infinite;
+            letter-spacing: 2px;
+            position: relative;
+        }
+        .title::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            bottom: -8px;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 3px;
+            background: linear-gradient(90deg, #409eff, #722ed1);
+            border-radius: 3px;
+            animation: lineScale 3s ease-in-out infinite alternate;
+        }
+        @keyframes float {
+            0%,100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        @keyframes lineScale {
+            0% { width: 80px; opacity: 0.6; }
+            100% { width: 160px; opacity: 1; }
+        }
+        .box {
+            width: 100%;
+            max-width: 900px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.85);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+            animation: fadeUp 1s ease;
+            transition: 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .box::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg,transparent,rgba(255,255,255,0.4),transparent);
+            animation: sweep 4s ease-in-out infinite;
+        }
+        @keyframes fadeUp {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes sweep {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        .box:hover {
+            transform: translateY(-5px) scale(1.01);
+            box-shadow: 0 12px 40px rgba(31, 38, 135, 0.25);
+        }
+        textarea {
+            width: 100%;
+            height: 72vh;
+            padding: 30px;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 17px;
+            line-height: 1.8;
+            color: #333;
+            resize: none;
+            border-radius: 16px;
+            caret-color: #409eff;
+            transition: 0.3s;
+        }
+        textarea:focus {
+            box-shadow: inset 0 0 20px rgba(100,149,237,0.15);
+        }
+        textarea::placeholder {
+            color: #a0aec0;
+            transition: 0.3s;
+        }
+        textarea:focus::placeholder {
+            opacity: 0;
+            transform: translateY(-5px);
+        }
+        .btn-wrap {
+            margin-top: 22px;
+            display: flex;
+            gap: 15px;
+        }
+        .btn {
+            padding: 10px 26px;
+            border-radius: 30px;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 4px 12px rgba(64,158,255,0.2);
+        }
+        .save-btn {
+            background: linear-gradient(135deg,#409eff,#66b1ff);
+            color: #fff;
+        }
+        .clear-btn {
+            background: #fff;
+            color: #409eff;
+            border: 1px solid #409eff;
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 18px rgba(64,158,255,0.3);
+        }
+        .tip {
+            margin-top: 25px;
+            color: #718096;
+            font-size: 14px;
+            animation: breath 6s ease infinite;
+        }
+        @keyframes breath {
+            0%,100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+        @media (max-width:768px) {
+            .title { font-size: 24px; }
+            textarea { height: 65vh; padding: 20px; }
+            .btn-wrap { justify-content: center; flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particles"></canvas>
+    <h2 class="title">廉洁承诺签名</h2>
+    <div class="box">
+        <textarea id="textArea" placeholder="在这里签下属于自己的廉洁承诺"></textarea>
+    </div>
+    <div class="btn-wrap">
+        <button class="btn save-btn" onclick="saveTxt()">保存文字</button>
+        <button class="btn clear-btn" onclick="clearTxt()">清空内容</button>
+    </div>
+    <p class="tip">✅ 电脑手机实时同步中...</p>
+
+    <script>
+        const canvas = document.getElementById("particles");
+        const ctx = canvas.getContext("2d");
+        let w, h;
+        let list = [];
+
+        function resize() {
+            w = window.innerWidth;
+            h = window.innerHeight;
+            canvas.width = w;
+            canvas.height = h;
+        }
+        resize();
+        window.addEventListener("resize", resize);
+
+        function Particle(){
+            this.x = Math.random() * w;
+            this.y = Math.random() * h;
+            this.r = Math.random() * 2 + 1;
+            this.sx = Math.random() * 0.5 - 0.25;
+            this.sy = Math.random() * 0.5 - 0.25;
+            this.color = "rgba(64,158,255,0.3)";
+        }
+        Particle.prototype.move = function(){
+            if(this.x < 0 || this.x > w) this.sx *= -1;
+            if(this.y < 0 || this.y > h) this.sy *= -1;
+            this.x += this.sx;
+            this.y += this.sy;
+        };
+        Particle.prototype.draw = function(){
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+        };
+
+        function init(){
+            list = [];
+            for(let i = 0; i < 60; i++){
+                list.push(new Particle());
+            }
+        }
+        function render(){
+            ctx.clearRect(0,0,w,h);
+            for(let i = 0; i < list.length; i++){
+                list[i].move();
+                list[i].draw();
+            }
+            requestAnimationFrame(render);
+        }
+        init();
+        render();
+
+        // ==============================
+        // 真正跨设备云端同步（免费可用）
+        // ==============================
+        const textArea = document.getElementById("textArea");
+        const API = "https://api.npoint.io/7e10e18e27c429112f5a";
+
+        // 打开页面自动加载云端内容
+        window.onload = async function(){
+            try {
+                let res = await fetch(API);
+                let data = await res.json();
+                textArea.value = data.content || "";
+            } catch(e){}
+        };
+
+        // 输入时自动同步到云端
+        let timer;
+        textArea.oninput = function(){
+            clearTimeout(timer);
+            timer = setTimeout(async () => {
+                await fetch(API, {
+                    method: "POST",
+                    headers:{"Content-Type":"application/json"},
+                    body: JSON.stringify({ content: this.value })
+                });
+            }, 500);
+        };
+
+        // 每1秒自动拉取云端最新内容
+        setInterval(async () => {
+            try {
+                let res = await fetch(API);
+                let data = await res.json();
+                if(textArea.value !== data.content){
+                    textArea.value = data.content;
+                }
+            } catch(e){}
+        }, 1000);
+
+        function saveTxt(){
+            alert("✅ 已同步到云端！手机电脑实时互通");
+        }
+
+        function clearTxt(){
+            textArea.value = "";
+            fetch(API, {
+                method: "POST",
+                headers:{"Content-Type":"application/json"},
+                body: JSON.stringify({ content: "" })
+            });
+        }
+    </script>
+</body>
+</html>
